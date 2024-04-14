@@ -120,7 +120,6 @@ public class Main {
 	}
 	
 	public static void about() {
-		// ADD
 		System.out.println("231RDC048 Anastasija Semeko");
 		System.out.println("231RDC040 Paula Volāne");
 		System.out.println("231RDC045 Vasilisa Živjuka");
