@@ -85,8 +85,8 @@ public class Main {
             System.out.println("Compression completed.");
 		   	}
 			
-		}catch (Exception ex) { 
-			//System.out.println("Error during compression: " + ex.getMessage());
+		}catch (IOException e) { 
+		   	System.err.println("Error decoding file.");
 		}
 
 	}
