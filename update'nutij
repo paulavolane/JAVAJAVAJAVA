@@ -1,0 +1,257 @@
+// 231RDC048 Anastasija Semeko
+// 231RDC040 Paula Volane
+// 231RDC045 Vasilisa Živjuka
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Main {
+
+	public static void main(String[] args) {
+
+		System.out.println("To compress file, enter 'comp'. To decompress existing file, enter 'decomp'.");
+		System.out.println("How to write file's location? For example, 'C:\\Users\\paula\\Desktop\\text.txt'.");
+
+		Scanner sc = new Scanner(System.in);
+		String choiseStr;
+		String sourceFile, resultFile, firstFile, secondFile;
+
+		loop: while (true) {
+
+			choiseStr = sc.next();
+
+			switch (choiseStr) {
+				case "comp":
+					System.out.print("source file location: ");
+					sourceFile = sc.next();
+					System.out.print("compressed file's name: ");
+					resultFile = sc.next();
+					comp(sourceFile, resultFile);
+					break;
+				case "decomp":
+					System.out.print("source file location: ");
+					sourceFile = sc.next();
+					System.out.print("decompressed file's name: ");
+					resultFile = sc.next();
+					decomp(sourceFile, resultFile);
+					break;
+				case "size":
+					System.out.print("file name: ");
+					sourceFile = sc.next();
+					size(sourceFile);
+					break;
+				case "equal":
+					System.out.print("first file name: ");
+					firstFile = sc.next();
+					System.out.print("second file name: ");
+					secondFile = sc.next();
+					System.out.println(equal(firstFile, secondFile));
+					break;
+				case "about":
+					about();
+					break;
+				case "exit":
+					break loop;
+			}
+		}
+
+		sc.close();
+	}
+
+	public static void comp(String sourceFile, String resultFile) {
+		// Vasilisa Živjuka
+		// Anastasija Semeko
+		try {
+			FileReader fr = new FileReader(sourceFile);
+			Scanner sc = new Scanner(fr);
+			String line;
+			PrintWriter pw = new PrintWriter(new FileWriter(resultFile));
+
+			while (sc.hasNextLine()) {
+				line = sc.nextLine();
+				ArrayList<Token> compressed = compress(line);
+				for (Token token : compressed) {
+					pw.println(token);
+				}
+				sc.close();
+				pw.close();
+				System.out.println("Compression completed.");
+			}
+
+		} catch (IOException e) { 
+			System.err.println("Error encoding file.");
+		}
+
+	}
+
+	public static ArrayList<Token> compress(String input) {
+		ArrayList<Token> tokens = new ArrayList<>();
+
+		int windowSize = 12;
+		int lookAheadBufferSize = 5;
+		int currentIndex = 0;
+
+		while (currentIndex < input.length()) {
+			int matchLength = 0;
+			int matchIndex = -1;
+
+			for (int i = Math.max(0, currentIndex - windowSize); i < currentIndex; i++) {
+				int j = 0;
+
+				while (j < lookAheadBufferSize && currentIndex + j < input.length()
+						&& input.charAt(i + j) == input.charAt(currentIndex + j)) {
+					j++;
+				}
+
+				if (j > matchLength) {
+					matchLength = j;
+					matchIndex = i;
+				}
+			}
+
+			if (matchLength > 0) {
+				tokens.add(new Token(currentIndex - matchIndex, matchLength, input.charAt(currentIndex + matchLength)));
+				currentIndex += matchLength + 1;
+			} else {
+				tokens.add(new Token(0, 0, input.charAt(currentIndex)));
+				currentIndex++;
+			}
+		}
+
+		return tokens;
+	}
+
+	static class Token {
+		private int offset;
+		private int length;
+		private char nextChar;
+
+		public Token(int offset, int length, char nextChar) {
+			this.offset = offset;
+			this.length = length;
+			this.nextChar = nextChar;
+		}
+
+		@Override
+		public String toString() {
+			return "(" + offset + "," + length + "," + nextChar + ")";
+		}
+	}
+
+	public static void decomp(String sourceFile, String resultFile) {
+		//Anastasija Semeko
+		//Paula Volāne
+		try {
+			FileReader fr = new FileReader(sourceFile);
+			Scanner sc = new Scanner(fr);
+			StringBuilder sb = new StringBuilder();
+
+			while (sc.hasNextLine()) {
+				String line = sc.nextLine();
+				ArrayList<Token> tokens = integerTokens(line);
+				String decompressed = decompress(tokens);
+				sb.append(decompressed);
+			}
+
+			sc.close();
+			fr.close();
+
+			PrintWriter pw = new PrintWriter(new FileWriter(resultFile));
+			pw.print(sb.toString());
+			pw.close();
+
+			System.out.println("Decompression completed.");
+		} catch (IOException e) { 
+			System.err.println("Error dedcoding file.");
+		}
+	}
+
+	private static ArrayList<Token> integerTokens(String line) {
+		ArrayList<Token> tokens = new ArrayList<>();
+		String[] parts = line.split("\\)\\s*\\(");
+		for (String part : parts) {
+			part = part.replaceAll("^\\(|\\)$", "");
+			String[] triplets = part.split(",");
+			if (triplets.length == 3 && !triplets[2].trim().isEmpty()) {
+				int offset = Integer.parseInt(triplets[0].trim());
+				int length = Integer.parseInt(triplets[1].trim());
+				char nextChar = triplets[2].trim().charAt(0);
+				tokens.add(new Token(offset, length, nextChar));
+			}
+		}
+		return tokens;
+	}
+
+	private static String decompress(ArrayList<Token> tokens) {
+		StringBuilder sb = new StringBuilder();
+		for (Token token : tokens) {
+			if (token.length == 0) {
+				sb.append(token.nextChar);
+			} else {
+				int startIndex = Math.max(0, sb.length() - token.offset);
+				int endIndex = startIndex + token.length;
+				if (startIndex < sb.length()) {
+					String again = sb.substring(startIndex, Math.min(endIndex, sb.length()));
+					sb.append(again);
+				}
+				sb.append(token.nextChar);
+			}
+		}
+		return sb.toString();
+	}
+
+	public static void size(String sourceFile) {
+		try {
+			FileInputStream f = new FileInputStream(sourceFile);
+			System.out.println("size: " + f.available());
+			f.close();
+		} catch (IOException ex) {
+			System.out.println(ex.getMessage());
+		}
+
+	}
+
+	public static boolean equal(String firstFile, String secondFile) {
+		try {
+			FileInputStream f1 = new FileInputStream(firstFile);
+			FileInputStream f2 = new FileInputStream(secondFile);
+			int k1, k2;
+			byte[] buf1 = new byte[1000];
+			byte[] buf2 = new byte[1000];
+			do {
+				k1 = f1.read(buf1);
+				k2 = f2.read(buf2);
+				if (k1 != k2) {
+					f1.close();
+					f2.close();
+					return false;
+				}
+				for (int i = 0; i < k1; i++) {
+					if (buf1[i] != buf2[i]) {
+						f1.close();
+						f2.close();
+						return false;
+					}
+
+				}
+			} while (!(k1 == -1 && k2 == -1));
+			f1.close();
+			f2.close();
+			return true;
+		} catch (IOException ex) {
+			System.out.println(ex.getMessage());
+			return false;
+		}
+	}
+
+	public static void about() {
+		System.out.println("231RDC048 Anastasija Semeko");
+		System.out.println("231RDC040 Paula Volane");
+		System.out.println("231RDC045 Vasilisa Živjuka");
+	}
+}
